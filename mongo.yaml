@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-deployment
+  labels:
+    app: mongo #used for selector to understand routing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo #used for selector to understand routing
+  template:
+    metadata:
+      labels:
+        app: mongo #used for selector to understand routing
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:5.0 #specific version that we adress
+        ports:
+        - containerPort: 27017 #received from the image page on dockerhub
+        env: #Create environment variables to set username and password - see on dockerhub
+        - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret #referencing secret file
+              key: mongo-user #referencing secret file
+        - name: MONGO_INITDB_ROOT_PASSWORD #Referenced on MongoDB dockerhub page
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret #referencing secret file
+              key: mongo-password #referencing secret file
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-service
+spec:
+  selector:
+    app: mongo #should match lables before
+  ports:
+    - protocol: TCP
+      port: 27017 #this is the port we decide on, but the tradition is to use the same
+      targetPort: 27017 #the port of the pods that belongs to the service - the same as container pod

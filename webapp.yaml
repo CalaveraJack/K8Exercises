@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-deployment
+  labels:
+    app: webapp #used for selector to understand routing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp #used for selector to understand routing
+  template:
+    metadata:
+      labels:
+        app: webapp #used for selector to understand routing
+    spec:
+      containers:
+      - name: webapp
+        image: nanajanashia/k8s-demo-app:v1.0 #pulling the directory of the webapp
+        ports:
+        - containerPort: 3000 #gotten from the author
+        env:
+        - name: USER_NAME # Env variable already in image of author
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret #referencing secret file
+              key: mongo-user #referencing secret file
+        - name: USER_PWD # Env variable already in image of author
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret #referencing secret file
+              key: mongo-password #referencing secret file
+        - name: DB_URL # Env variable already in image of author
+          valueFrom:
+            configMapKeyRef: # From the ConfigMap - connectivity with database
+              name: mongo-config #referencing config file
+              key: mongo-url #referencing config file
+--- #Classic separator in yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-service
+spec:
+  type: NodePort #External service type
+  selector:
+    app: webapp #should match lables before
+  ports:
+    - protocol: TCP
+      port: 3000 #this is the port we decide on, but the tradition is to use the same
+      targetPort: 3000 #the port of the pods that belongs to the service - the same as container pod
+      nodePort: 30100 #See the range, not all are available
